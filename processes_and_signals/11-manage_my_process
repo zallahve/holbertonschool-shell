@@ -3,61 +3,37 @@
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
 DAEMON="$DIR/manage_my_process"
-
 PID_FILE="/var/run/my_process.pid"
-FALLBACK_PID_FILE="/tmp/my_process.pid"
 
-write_pidfile() {
-  local pid="$1"
-
-  mkdir -p "$(dirname "$PID_FILE")" 2>/dev/null || true
-
-  if echo "$pid" > "$PID_FILE" 2>/dev/null; then
-    return
-  fi
-
-  # Fallback if /var/run isn't writable (common in sandboxes)
-  echo "$pid" > "$FALLBACK_PID_FILE"
-  ln -sf "$FALLBACK_PID_FILE" "$PID_FILE" 2>/dev/null || true
-}
-
-remove_pidfile() {
-  rm -f "$PID_FILE" 2>/dev/null || true
-  rm -f "$FALLBACK_PID_FILE" 2>/dev/null || true
-}
-
-do_start() {
+start_proc() {
   "$DAEMON" >/dev/null 2>&1 &
-  write_pidfile "$!"
-  echo "manage_my_process started"
+  mkdir -p /var/run 2>/dev/null || true
+  echo "$!" > "$PID_FILE"
 }
 
-do_stop() {
-  if [ -e "$PID_FILE" ]; then
+stop_proc() {
+  if [ -f "$PID_FILE" ]; then
     pid="$(cat "$PID_FILE" 2>/dev/null || true)"
     if [ -n "$pid" ]; then
       kill "$pid" 2>/dev/null || true
     fi
+    rm -f "$PID_FILE" 2>/dev/null || true
   fi
-  remove_pidfile
-  echo "manage_my_process stopped"
-}
-
-do_restart() {
-  do_stop
-  do_start
-  echo "manage_my_process restarted"
 }
 
 case "${1-}" in
   start)
-    do_start
+    start_proc
+    echo "manage_my_process started"
     ;;
   stop)
-    do_stop
+    stop_proc
+    echo "manage_my_process stopped"
     ;;
   restart)
-    do_restart
+    stop_proc
+    start_proc
+    echo "manage_my_process restarted"
     ;;
   *)
     echo "Usage: manage_my_process {start|stop|restart}"
