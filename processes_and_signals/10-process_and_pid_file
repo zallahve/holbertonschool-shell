@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# This script writes its PID to /var/run/myscript.pid, loops forever, and handles signals
+
+PID_FILE="/var/run/myscript.pid"
+
+create_pid_file() {
+  echo "$$" > "$PID_FILE"
+}
+
+cleanup_and_exit() {
+  rm -f "$PID_FILE"
+  exit 0
+}
+
+on_sigterm() {
+  echo "I hate the kill command"
+  cleanup_and_exit
+}
+
+on_sigint() {
+  echo "Y U no love me?!"
+}
+
+trap on_sigterm SIGTERM
+trap on_sigint SIGINT
+trap cleanup_and_exit SIGQUIT
+
+create_pid_file
+
+while true; do
+  echo "To infinity and beyond"
+  sleep 2
+done
