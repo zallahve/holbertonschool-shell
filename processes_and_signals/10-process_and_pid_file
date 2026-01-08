@@ -4,6 +4,7 @@
 PID_FILE="/var/run/myscript.pid"
 
 create_pid_file() {
+  mkdir -p "$(dirname "$PID_FILE")"
   echo "$$" > "$PID_FILE"
 }
 
