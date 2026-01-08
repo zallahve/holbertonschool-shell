@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
+# This script writes "I am alive!" to /tmp/my_process indefinitely
 
-while true
-do
-    echo "I am alive!" >> /tmp/my_process
-    sleep 2
+LOG_FILE="/tmp/my_process"
+touch "$LOG_FILE"
+
+while true; do
+  echo "I am alive!" >> "$LOG_FILE"
+  sleep 2
 done
