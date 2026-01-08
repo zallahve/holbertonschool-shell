@@ -3,30 +3,44 @@
 
 PID_FILE="/var/run/myscript.pid"
 
-create_pid_file() {
-  mkdir -p "$(dirname "$PID_FILE")"
-  echo "$$" > "$PID_FILE"
+write_pid_file() {
+  if [ "$(id -u)" -eq 0 ]; then
+    mkdir -p "$(dirname "$PID_FILE")"
+    echo "$$" > "$PID_FILE"
+  else
+    sudo -n mkdir -p "$(dirname "$PID_FILE")"
+    echo "$$" | sudo -n tee "$PID_FILE" > /dev/null
+  fi
 }
 
-cleanup_and_exit() {
-  rm -f "$PID_FILE"
-  exit 0
+remove_pid_file() {
+  if [ "$(id -u)" -eq 0 ]; then
+    rm -f "$PID_FILE"
+  else
+    sudo -n rm -f "$PID_FILE"
+  fi
 }
 
 on_sigterm() {
   echo "I hate the kill command"
-  cleanup_and_exit
+  remove_pid_file
+  exit 0
 }
 
 on_sigint() {
   echo "Y U no love me?!"
 }
 
+on_sigquit() {
+  remove_pid_file
+  exit 0
+}
+
 trap on_sigterm SIGTERM
 trap on_sigint SIGINT
-trap cleanup_and_exit SIGQUIT
+trap on_sigquit SIGQUIT
 
-create_pid_file
+write_pid_file
 
 while true; do
   echo "To infinity and beyond"
